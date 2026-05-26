@@ -1,0 +1,25 @@
+{
+  "name": "vvifeel_skills",
+  "description": "Claude Code plugin marketplace for vvifeel skills, starting with Korean internal report generation.",
+  "owner": {
+    "name": "vvifeel",
+    "url": "https://github.com/vvifeel"
+  },
+  "plugins": [
+    {
+      "name": "ss-report",
+      "description": "Korean internal report generation skill with strict DOCX layout, spacing, table, footnote, and writing-style validation.",
+      "source": "./plugins/vertical-plugins/ss-report",
+      "category": "productivity",
+      "tags": [
+        "report",
+        "docx",
+        "korean",
+        "internal-report",
+        "business-writing",
+        "layout",
+        "skill"
+      ]
+    }
+  ]
+}
