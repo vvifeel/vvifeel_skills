@@ -1,6 +1,6 @@
 {
   "name": "ss-report",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Korean internal report generation plugin. Includes ss-report-full (full-featured, 3-step flow) and ss-report-light (lightweight, 2-step flow) skills for structured DOCX internal reports.",
   "author": {
     "name": "vvifeel",
