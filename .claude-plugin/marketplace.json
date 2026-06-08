@@ -20,6 +20,22 @@
         "layout",
         "skill"
       ]
+    },
+    {
+      "name": "ss-report-light",
+      "description": "Korean internal report generation skill (lightweight) with streamlined 2-step flow. Generates structured DOCX internal reports with strict layout, spacing, table, footnote, and writing-style rules.",
+      "source": "./plugins/vertical-plugins/ss-report-light",
+      "category": "productivity",
+      "tags": [
+        "report",
+        "docx",
+        "korean",
+        "internal-report",
+        "business-writing",
+        "layout",
+        "lightweight",
+        "skill"
+      ]
     }
   ]
 }
