@@ -20,10 +20,9 @@ Restart Claude Code after installation.
 
 ## Plugins
 
-| Plugin | Description |
-| --- | --- |
-| [ss-report](./plugins/vertical-plugins/ss-report) | Korean internal report generation skill with strict DOCX layout, spacing, table, footnote, and writing-style validation. |
-| [ss-report-light](./plugins/vertical-plugins/ss-report-light) | Korean internal report generation skill (lightweight) with streamlined 2-step flow. Generates structured DOCX internal reports with strict layout, spacing, table, footnote, and writing-style rules. |
+| Plugin | Skills | Description |
+| --- | --- | --- |
+| [ss-report](./plugins/vertical-plugins/ss-report) | ss-report-full, ss-report-light | Korean internal report generation. Full-featured (3-step flow) and lightweight (2-step flow) variants for structured DOCX internal reports. |
 
 ## Requirements
 
