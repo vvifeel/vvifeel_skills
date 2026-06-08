@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "ss-report",
-      "description": "Korean internal report generation skill with strict DOCX layout, spacing, table, footnote, and writing-style validation.",
+      "description": "Korean internal report generation plugin. Includes ss-report-full (full-featured, 3-step flow) and ss-report-light (lightweight, 2-step flow) skills for structured DOCX internal reports.",
       "source": "./plugins/vertical-plugins/ss-report",
       "category": "productivity",
       "tags": [
