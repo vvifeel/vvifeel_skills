@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "ss-report",
-      "description": "Korean internal report generation plugin. Includes ss-report-full (full-featured, 3-step flow) and ss-report-light (lightweight, 2-step flow) skills for structured DOCX internal reports.",
+      "description": "Korean internal report generation plugin. Includes ss-report-full (3-step flow), ss-report-light (2-step flow), and ss-report-winword (full + Word COM layout verification, Windows only) skills for structured DOCX internal reports.",
       "source": "./plugins/vertical-plugins/ss-report",
       "category": "productivity",
       "tags": [

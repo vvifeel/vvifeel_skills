@@ -2,21 +2,23 @@
 
 Korean internal report generation plugin for Claude Code.
 
-This plugin packages one skill:
+This plugin includes three skills:
 
-```text
-skills/ss-report
-```
+| Skill | Flow | Best For |
+|-------|------|----------|
+| `ss-report-full` | 3-step (outline → page plan → generate) | Production reports |
+| `ss-report-light` | 2-step (outline+page plan → generate) | Drafts, quick tests |
+| `ss-report-winword` | full + Word COM layout verification loop | Windows + MS Word (highest quality) |
 
-The skill generates structured Korean internal reports as DOCX files with strict rules for:
+All skills generate structured Korean internal reports as DOCX files with strict rules for:
 
-- section hierarchy
-- line length
-- table placement
-- footnote placement
-- spacing
+- Section hierarchy
+- Line length
+- Table placement
+- Footnote placement
+- Spacing
 - Korean business writing style
-- validation through bundled scripts
+- Validation through bundled scripts
 
 ## Install
 
@@ -34,6 +36,12 @@ Install:
 
 Restart Claude Code after installation.
 
+## Update
+
+```bash
+/plugin update ss-report
+```
+
 ## Trigger Examples
 
 - 보고서 만들어줘
@@ -41,10 +49,26 @@ Restart Claude Code after installation.
 - 내부 보고서 작성해줘
 - 검토 보고서 형태로 정리해줘
 
-## Included Skill
+## Included Skills
 
 ```text
-skills/ss-report/SKILL.md
-skills/ss-report/references/
-skills/ss-report/scripts/
+skills/ss-report-full/SKILL.md
+skills/ss-report-full/references/
+skills/ss-report-full/scripts/
+
+skills/ss-report-light/SKILL.md
+skills/ss-report-light/references/
+skills/ss-report-light/scripts/
+
+skills/ss-report-winword/SKILL.md       ← full + Word COM verification (Windows only)
+skills/ss-report-winword/references/
+skills/ss-report-winword/scripts/
 ```
+
+## Prerequisites for ss-report-winword
+
+- Windows OS
+- Microsoft Word installed
+- `pip install pywin32`
+
+On non-Windows environments, use `ss-report-full` instead.
