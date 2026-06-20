@@ -1,6 +1,6 @@
 {
   "name": "vvifeel_skills",
-  "description": "Claude Code plugin marketplace for vvifeel skills, starting with Korean internal report generation.",
+  "description": "Claude Code plugin marketplace for vvifeel skills. Korean internal report generation.",
   "owner": {
     "name": "vvifeel",
     "url": "https://github.com/vvifeel"
