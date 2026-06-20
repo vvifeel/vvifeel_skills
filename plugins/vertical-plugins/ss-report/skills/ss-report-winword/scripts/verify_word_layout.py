@@ -1,10 +1,40 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-verify_word_layout.py — Word COM 기반 실제 페이지 레이아웃 검증
+verify_word_layout.py v2 — Word COM 기반 실제 페이지 레이아웃 검증
 사전 조건: Windows + MS Word 설치 + pip install pywin32
+
+검증 항목:
+  [표 분리]    표가 페이지 경계에서 잘리는지 (cantSplit 보완 검증)
+  [셀 줄바꿈]  헤더 셀 줄바꿈, 데이터 셀 마지막 줄 단독(≤2자) 탐지
+  [고립 탐지]  P2+ 첫 줄 body 항목 시작 / H2+body 1줄만 페이지 말미 고립
 """
 import sys
+import io
 import os
+import re
+
+# Windows cp949 터미널에서 이모지/한글 출력 보장
+if hasattr(sys.stdout, 'buffer'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'buffer'):
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+
+def classify_para(text):
+    """단락 유형 분류: H1 / H2 / BODY / FN / OTHER"""
+    if not text:
+        return "EMPTY"
+    if text.startswith("*"):
+        return "FN"
+    if text.startswith("□"):
+        return "H2"
+    if re.match(r"^\d+\.", text):
+        return "H1"
+    _body_starts = ("-", "·", "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "※")
+    if any(text.startswith(s) for s in _body_starts):
+        return "BODY"
+    return "OTHER"
 
 
 def main():
@@ -47,41 +77,40 @@ def main():
         print(f"총 페이지: {total_pages}")
         print()
 
-        # ── 페이지별 단락 수집 ──────────────────────────────────────────────
-        pages     = {}
-        para_list = []
+        # ── 단락 수집 (페이지 + 표 여부 포함) ─────────────────────────────────
+        # pages_display: page → [텍스트]  (출력용)
+        # pages_meta:    page → [{text, in_table}]  (분석용)
+        pages_display = {}
+        pages_meta    = {}
+
         for para in doc.Paragraphs:
             text = (para.Range.Text
                     .strip()
-                    .replace('\x07', '')
-                    .replace('\r', '')
-                    .replace('\n', ''))
+                    .replace("\x07", "")
+                    .replace("\r", "")
+                    .replace("\n", ""))
             if not text:
                 continue
             page = int(para.Range.Information(3))  # wdActiveEndPageNumber
-            pages.setdefault(page, []).append(text[:70])
-            para_list.append({"text": text[:70], "page": page})
+            try:
+                in_table = bool(para.Range.Information(12))  # wdWithInTable
+            except Exception:
+                in_table = False
 
-        for pg in sorted(pages.keys()):
+            pages_display.setdefault(page, []).append(text[:70])
+            pages_meta.setdefault(page, []).append({"text": text[:70], "in_table": in_table})
+
+        for pg in sorted(pages_display.keys()):
             print(f"[P{pg}]")
-            for item in pages[pg]:
+            for item in pages_display[pg]:
                 print(f"  {item}")
             print()
 
-        _body_starts = ("-", "·", "①", "②", "③", "④", "⑤", "※")
-
-        def is_h1(text):
-            return bool(text) and text[0].isdigit() and len(text) > 2 and text[1] == '.'
-
-        def is_h2(text):
-            return bool(text) and text.startswith("□")
-
-        def is_body(text):
-            return bool(text) and any(text.startswith(s) for s in _body_starts)
+        all_issues = []
 
         # ── 표 분리 검증 ────────────────────────────────────────────────────
         table_issues = []
-        print("[표 검증]")
+        print("[표 분리]")
         if doc.Tables.Count == 0:
             print("  (표 없음)")
         for t_idx in range(doc.Tables.Count):
@@ -99,101 +128,105 @@ def main():
                 print(f"  {msg}")
             except Exception as e:
                 print(f"  ⚠ 표{t_idx+1}: 확인 실패 ({e})")
+        all_issues.extend(table_issues)
         print()
 
-        # ── H2 섹션 페이지 걸침 탐지 ────────────────────────────────────────
-        # 규칙: H2(□)와 그 아래 모든 H3/H4(lv3/lv4)는 같은 페이지 안에서 완결되어야 함
-        # 탐지: H2 섹션이 여러 페이지에 걸치는 경우 → 내용 압축 또는 H2 구조 재편 필요
-        h2_span_issues = []
-        print("[H2 섹션 완결 검증]")
-
-        current_h2_text       = None
-        current_h2_start_page = None
-        current_h2_end_page   = None
-
-        def flush_h2():
-            if current_h2_text and current_h2_end_page != current_h2_start_page:
-                return (f"❌ H2 걸침: '{current_h2_text}' "
-                        f"P{current_h2_start_page}→P{current_h2_end_page} "
-                        f"(lv3/lv4가 다음 페이지로 넘어감)")
-            return None
-
-        for item in para_list:
-            text = item["text"]
-            page = item["page"]
-
-            if is_h1(text):
-                # H1 경계 — 현재 H2 마무리
-                err = flush_h2()
-                if err:
-                    h2_span_issues.append(err)
-                current_h2_text       = None
-                current_h2_start_page = None
-                current_h2_end_page   = None
-
-            elif is_h2(text):
-                # 새 H2 시작 — 이전 H2 마무리
-                err = flush_h2()
-                if err:
-                    h2_span_issues.append(err)
-                current_h2_text       = text[:50]
-                current_h2_start_page = page
-                current_h2_end_page   = page
-
-            elif current_h2_text:
-                # H2 하위 항목(H3/H4) — 페이지 범위 확장 추적
-                if page > current_h2_end_page:
-                    current_h2_end_page = page
-
-        # 마지막 H2 처리
-        err = flush_h2()
-        if err:
-            h2_span_issues.append(err)
-
-        if h2_span_issues:
-            for iss in h2_span_issues:
-                print(f"  {iss}")
-        else:
-            print("  ✅ 모든 H2 섹션 단일 페이지 내 완결")
+        # ── 표 셀 줄바꿈 탐지 ───────────────────────────────────────────────
+        # 헤더 셀 줄바꿈(❌) / 데이터 셀 마지막 줄 단독 ≤2자(⚠)
+        cell_issues = []
+        print("[셀 줄바꿈]")
+        for t_idx in range(doc.Tables.Count):
+            table = doc.Tables(t_idx + 1)
+            for r_idx in range(table.Rows.Count):
+                is_hdr = (r_idx == 0)
+                for c_idx in range(table.Columns.Count):
+                    try:
+                        cell = table.Cell(r_idx + 1, c_idx + 1)
+                        cell_text = (cell.Range.Text
+                                     .replace("\r", "").replace("\x07", "")
+                                     .replace("\n", "").strip())
+                        if not cell_text:
+                            continue
+                        try:
+                            lines_col = cell.Range.Lines
+                            n_lines   = lines_col.Count
+                            if n_lines > 1:
+                                if is_hdr:
+                                    msg = (f"❌ 표{t_idx+1} {r_idx+1}행{c_idx+1}열 "
+                                           f"헤더 줄바꿈({n_lines}줄): '{cell_text[:20]}'")
+                                    cell_issues.append(msg)
+                                    print(f"  {msg}")
+                                else:
+                                    last_text = (lines_col(n_lines).Range.Text
+                                                 .replace("\r", "").replace("\x07", "")
+                                                 .replace("\n", "").strip())
+                                    if last_text and len(last_text) <= 2:
+                                        msg = (f"⚠ 표{t_idx+1} {r_idx+1}행{c_idx+1}열 "
+                                               f"마지막 줄 단독({len(last_text)}자): "
+                                               f"'{last_text}' ← '{cell_text[:25]}'")
+                                        cell_issues.append(msg)
+                                        print(f"  {msg}")
+                        except Exception:
+                            pass  # Range.Lines 미지원 셀 스킵
+                    except Exception:
+                        pass
+        if not cell_issues:
+            print("  ✅ 셀 줄바꿈 이상 없음")
+        all_issues.extend(cell_issues)
         print()
 
-        # ── 페이지 시작 H3/H4 탐지 (H2 걸침의 증상 보조 확인) ──────────────
-        page_first = {}
-        for item in para_list:
-            pg = item["page"]
-            if pg not in page_first:
-                page_first[pg] = item["text"]
-
-        page_start_issues = []
-        print("[페이지 시작 항목 검증]")
-        for pg in sorted(page_first.keys()):
-            if pg == 1:
-                continue
-            first = page_first[pg]
-            if is_body(first):
-                msg = f"❌ P{pg} 시작이 H3/H4: '{first[:50]}' (H2 없이 본문으로 시작)"
-                page_start_issues.append(msg)
-                print(f"  {msg}")
-        if not page_start_issues:
-            print("  ✅ 모든 페이지 H1 또는 H2로 시작")
-        print()
-
-        # ── H1/H2 고립 탐지 (페이지 말미 단독 헤더) ─────────────────────────
+        # ── 고립 탐지 ────────────────────────────────────────────────────────
+        # 규칙 1: P2+ 첫 비(非)표 단락이 BODY/FN → ❌  (H2 없이 body로 시작)
+        # 규칙 2: 페이지 말미 마지막 비표 단락이 H1/H2/OTHER(짧음) → ⚠
+        # 규칙 3: 페이지 말미 [H2, BODY]만 남고 다음 페이지도 BODY로 시작 → ❌
         orphan_issues = []
         print("[고립 탐지]")
-        for i, item in enumerate(para_list[:-1]):
-            next_item = para_list[i + 1]
-            text = item["text"]
-            if (is_h1(text) or is_h2(text)) and item["page"] != next_item["page"]:
-                msg = f"⚠ P{item['page']} 말미 단독 헤더: '{text[:50]}'"
+        sorted_pgs = sorted(pages_meta.keys())
+
+        for idx, pg in enumerate(sorted_pgs):
+            body_items = [x for x in pages_meta[pg] if not x["in_table"]]
+            next_pg    = sorted_pgs[idx + 1] if idx + 1 < len(sorted_pgs) else None
+            next_body  = ([x for x in pages_meta[next_pg] if not x["in_table"]]
+                          if next_pg else [])
+
+            # 규칙 1: 페이지 상단 body 금지 (P2 이후)
+            if pg > 1 and body_items:
+                first_type = classify_para(body_items[0]["text"])
+                if first_type in ("BODY", "FN"):
+                    msg = (f"❌ P{pg} 첫 줄 body 항목 — "
+                           f"이전 H2 아래 항목 부족: '{body_items[0]['text'][:30]}'")
+                    orphan_issues.append(msg)
+                    print(f"  {msg}")
+
+            if not body_items or not next_body:
+                continue
+
+            last      = body_items[-1]
+            last_type = classify_para(last["text"])
+
+            # 규칙 2: 단독 헤더성 항목 페이지 말미
+            if last_type in ("H1", "H2", "OTHER") and len(last["text"]) < 35:
+                msg = f"⚠ P{pg} 말미 단독 항목: '{last['text']}'"
                 orphan_issues.append(msg)
                 print(f"  {msg}")
+                continue  # 규칙 3 중복 탐지 방지
+
+            # 규칙 3: H2 + body 1줄만 → 다음 페이지 body 연속
+            if (len(body_items) >= 2
+                    and classify_para(body_items[-2]["text"]) == "H2"
+                    and last_type == "BODY"
+                    and classify_para(next_body[0]["text"]) == "BODY"):
+                msg = (f"❌ P{pg} 말미 H2+body 1줄 고립 "
+                       f"(다음 페이지 body 연속): '{body_items[-2]['text'][:30]}'")
+                orphan_issues.append(msg)
+                print(f"  {msg}")
+
         if not orphan_issues:
-            print("  ✅ 고립 헤더 없음")
+            print("  ✅ 고립 항목 없음")
+        all_issues.extend(orphan_issues)
         print()
 
-        # ── 이슈 요약 ──────────────────────────────────────────────────────────
-        all_issues = table_issues + h2_span_issues + page_start_issues + orphan_issues
+        # ── 이슈 요약 ────────────────────────────────────────────────────────
         if all_issues:
             print(f"[이슈 요약] {len(all_issues)}건 발견 → 수정 후 재생성 필요")
             for iss in all_issues:

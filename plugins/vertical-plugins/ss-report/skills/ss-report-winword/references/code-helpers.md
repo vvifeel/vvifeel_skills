@@ -162,10 +162,12 @@ const num4 = (s, after=SP.toH4) => new Paragraph({
 // after는 buildParagraphs가 fnAfterDxa()로 동적 결정 — 직접 지정 금지
 const fn = (note, after=SP.toH4) => {
   const text = typeof note === "object" ? (note.text ?? "") : note;
+  // fn_align.js prefix 포함 시: "   * HBM(...):" 형식 — trimStart() 후 "*" 시작 → 그대로 사용
+  const full = text.trimStart().startsWith('*') ? text : `* ${text}`;
   return new Paragraph({
     indent:{ left:L2 + 284 },
     spacing:{ before:0, after },
-    children:[new TextRun({ text:`* ${text}`.replace(/\.$/, ""), font:F, size:18, color:BLUE })]
+    children:[new TextRun({ text: full.replace(/\.$/, ""), font:F, size:18, color:BLUE })]
   });
 };
 // tableGap: 표 뒤 자동 여백. defs에 직접 쓰지 않음 — buildParagraphs가 필요 시 삽입
@@ -385,8 +387,30 @@ function buildParagraphs(defs) {
 //
 // ── 풋노트 ──
 //   after: fnAfterDxa()가 역산하여 자동 결정 (직접 지정 금지)
-//   위치: 직전 문단 기호 시작점+2칸 고정 (anchor 방식 폐기)
-//   예: { lv:LV.GAP, _isFn: "IRR: 내부수익률, 투자 수익률 지표" }
+//
+//   위치 규칙 (STRICT) — 우선순위:
+//     1순위: 설명 대상 용어·수치 아래 → fnPrefix(body, "설명대상")
+//     2순위: 앵커 없을 때만 → 기호+공백 1칸 제외 첫 글자 아래
+//     본문 "- 텍스트" → 기호(-) + 공백 = 2칸 → * 앞 최소 2칸 공백 필수
+//     → verify_report.py [풋노트prefix] 검사가 prefix 부족을 ❌ 탐지
+//
+//   작성법 (STRICT):
+//     ① 본문 텍스트를 상수로 분리
+//     ② _isFn: `${fnPrefix(상수, "설명대상용어")}* 설명` 형식
+//     ③ fnPrefix()는 scripts/fn_align.js에서 require
+//
+//   예 (용어 설명):
+//     const _bHbm = "- '26년 HBM 시장 $54.6B, 전년비 + 58%";
+//     { lv:LV.BODY, text:[tcs(_bHbm,-8)] },
+//     { lv:LV.GAP,  _isFn:`${fnPrefix(_bHbm,"HBM")}* HBM: GPU에 적층하는 고대역폭 메모리` }
+//     // "HBM" 위치 아래에 * 정렬
+//
+//   예 (수치 출처):
+//     const _bWsts = "- '26년 글로벌 반도체 시장 약 $975B, 전년비 + 25%";
+//     { lv:LV.BODY, text:[tcs(_bWsts,-8)] },
+//     { lv:LV.GAP,  _isFn:`${fnPrefix(_bWsts,"$")}* WSTS: '26년 전망치 기준` }
+//     // 설명 대상이 $975B 수치이므로 "$" 아래 정렬
+//
 //   길이: 직전 줄(풋노트 윗줄) 글자 수(환산) × 2/3 이내
 //   필요한 경우에만 삽입 — 0개여도 무방, 억지로 채우지 않음
 //   배치: 필요성 기준. 보충설명이 필요한 줄 바로 아래에 빈줄 없이 배치
@@ -405,6 +429,23 @@ const defs = [
   { lv: LV.GAP,  _isFn: "필요한 줄 설명만 삽입" },
   { lv: LV.H1,   text: "2. 분석" },
 ];
+
+// ── 풋노트 * 정렬 (fn_align.js 연동) ──────────────────────────────────────
+// fn_align.js의 fnPrefix()로 본문 내 주석 용어 위치에 * 를 근사 정렬.
+//
+// 사용법:
+//   const { fnPrefix } = require('./scripts/fn_align');
+//   const body1 = "- '26년 HBM 시장 $54.6B, 전년비 + 58% (BofA 추산)";
+//   ...
+//   { lv: LV.BODY, text: [tcs(body1, -8)] },
+//   { lv: LV.GAP,  _isFn: `${fnPrefix(body1, "HBM")}* HBM(High Bandwidth Memory): GPU에 적층하는 고대역폭 메모리` },
+//
+// 원리: bodyText(14pt)에서 term 앞까지 DXA 추정 → 9pt 공백 수로 변환
+// 결과: fn()의 TextRun이 "   * HBM(...):" 형식 → *가 HBM 아래에 근사 위치
+// 주의:
+//   - term이 줄 앞쪽에 있을 때 효과적; 줄 중반 이후라면 공백이 MAX_SPACES(28)로 상한
+//   - _isFn 값에 "* "를 직접 포함해야 함 (fn()이 이미 "*" 있으면 중복 삽입 안 함)
+//   - 영문 대문자 약어(HBM, WSTS, BofA 등)에 적합; 한글 시작 풋노트는 prefix 없이 사용
 
 const children = buildParagraphs(defs);
 
@@ -431,7 +472,54 @@ main();
 
 ---
 
-## STEP 9. 별첨 규칙 + XML
+## STEP 9. 표 셀 DXA 설계 기준
+
+**셀 유효 폭 공식:**
+```
+C()  셀 유효폭 = 열 DXA − 216        (패딩 108×2)
+CL() 셀 유효폭 = 열 DXA − 276        (패딩 216 + left indent 60)
+```
+
+**글자폭 DXA 추정 (12pt 바탕체 기준):**
+```
+한글 1자    = 240 DXA
+영문/숫자   = 145 DXA  (평균)
+공백        =  90 DXA
+특수문자    =  90 DXA
+```
+
+**CLines 필수 적용 기준:**
+- 셀 텍스트 DXA 추정치가 유효폭 초과 → 줄바꿈 위험 → CLines로 의미 단위 명시 개행
+- 헤더 셀(C(text, w, true)): 절대 줄바꿈 금지 → 열 너비 확대 또는 텍스트 단축
+- 데이터 셀 마지막 줄 ≤2자: CLines로 조정 (단어 단위로 균형 있게 분배)
+
+**5열 표 권장 열 너비 패턴 (합=8900 DXA):**
+```javascript
+const cols = [1500, 1200, 1900, 1800, 2500];
+// 열1(분류/구분): 1500 → 유효폭 1284 (한글 5자)
+// 열2(기업/지역):  1200 → 유효폭  984 (한글 4자)
+// 열3(항목/기간):  1900 → 유효폭 1684 (한글 7자)
+// 열4(수치/일정):  1800 → 유효폭 1584 (한글 6.5자)
+// 열5(주요내용):   2500 → 유효폭 2224 (CL 시 2164, 한글 9자)
+```
+
+**3열/4열 표 패턴 예시:**
+```javascript
+const cols3 = [2200, 3200, 3500];  // 구분 / 내용 / 비고
+const cols4 = [1500, 2000, 2700, 2700]; // 구분 / 기업 / 현황 / 전망
+```
+
+**열 너비 설계 체크리스트:**
+1. 열 DXA 합계 = TW(8900) 확인
+2. 헤더 텍스트 DXA < 열DXA−216 확인 (헤더 줄바꿈 절대 금지)
+3. 장문 셀 예상 시 CL()/CLines() 지정 및 DXA 검토
+4. verify_report.py `[셀DXA]` 섹션 WARN/FAIL 0건 확인
+
+---
+
+---
+
+## STEP 10. 별첨 규칙 + XML
 
 별첨이 필요한 경우에만 `references/code-helpers-annex.md`를 읽고 적용한다.
 별첨이 없으면 이 파일을 열지 않는다.
