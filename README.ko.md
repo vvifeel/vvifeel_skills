@@ -22,7 +22,7 @@ Claude Code에서 마켓플레이스를 추가합니다.
 
 | Plugin | 설명 |
 | --- | --- |
-| [ss-report](./plugins/vertical-plugins/ss-report) | 한국어 내부 보고서를 정형 DOCX 레이아웃, 표, 풋노트, 문체 검증 기준에 맞춰 생성하는 스킬 |
+| [ss-report](./plugins/vertical-plugins/ss-report) | 한국어 내부 보고서를 정형 DOCX 레이아웃, 표, 풋노트, 문체 검증 기준에 맞춰 생성하는 스킬 (ss-report-full / ss-report-light / ss-report-winword) |
 
 ## 요구사항
 

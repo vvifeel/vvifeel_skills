@@ -22,7 +22,7 @@ Restart Claude Code after installation.
 
 | Plugin | Skills | Description |
 | --- | --- | --- |
-| [ss-report](./plugins/vertical-plugins/ss-report) | ss-report-full, ss-report-light | Korean internal report generation. Full-featured (3-step flow) and lightweight (2-step flow) variants for structured DOCX internal reports. |
+| [ss-report](./plugins/vertical-plugins/ss-report) | ss-report-full, ss-report-light, ss-report-winword | Korean internal report generation. Full-featured (3-step flow), lightweight (2-step flow), and Windows Word COM layout verification variants for structured DOCX internal reports. |
 
 ## Requirements
 
