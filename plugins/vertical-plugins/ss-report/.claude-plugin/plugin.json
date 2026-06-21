@@ -1,6 +1,6 @@
 {
   "name": "ss-report",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Korean internal report generation plugin. Skills: ss-report-full (3-step), ss-report-light (2-step), ss-report-winword (full + Word COM layout verification, Windows only).",
   "author": {
     "name": "vvifeel",

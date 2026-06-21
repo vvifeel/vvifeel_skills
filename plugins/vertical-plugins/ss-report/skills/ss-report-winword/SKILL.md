@@ -1,7 +1,7 @@
 ---
 name: ss-report-winword
 description: >
-  [v1.2] ss-report-full 기반 + Windows MS Word COM 레이아웃 검증 루프가 추가된 최고 품질 보고서 스킬.
+  [v1.3] ss-report-full 기반 + Windows MS Word COM 레이아웃 검증 루프가 추가된 최고 품질 보고서 스킬.
   투자 검토, 포트폴리오 현황, 운영안 보고, 진행 현황, 설득/제안 보고 등 모든 내부 보고서에 적용.
   트리거: "보고서 만들어줘", "보고서 작성해줘", "워드로 뽑아줘", "docx 보고서", "내부 보고서",
            "검토 보고서", "현황 보고서", "기획 보고서", "제안 보고서", "ss_report", "보고서 양식",
