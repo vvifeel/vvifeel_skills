@@ -11,9 +11,6 @@ description: >
 
 # Portfolio 분석 스킬
 
-스킬 로드 시 **반드시 먼저** `references/project_instructions.md`를 읽는다.
-컬럼 정의·핵심 조회 원칙(1-A~1-E)·공통 코드 블록이 여기에 있다.
-
 스크립트: `scripts/get_db_meta.py`, `scripts/search_portfolio.py`,
            `scripts/get_company_history.py`, `scripts/get_statistics.py`,
            `scripts/get_portfolio_summary.py`
