@@ -1,0 +1,21 @@
+{
+  "name": "portfolio",
+  "version": "1.0.0",
+  "description": "VC portfolio intelligence skill. Excel-based portfolio DB search, aggregation, analysis, and reporting with CB Insights integration.",
+  "author": {
+    "name": "vvifeel",
+    "url": "https://github.com/vvifeel"
+  },
+  "homepage": "https://github.com/vvifeel/vvifeel_skills/tree/main/plugins/vertical-plugins/portfolio",
+  "repository": "https://github.com/vvifeel/vvifeel_skills",
+  "license": "MIT",
+  "keywords": [
+    "portfolio",
+    "venture-capital",
+    "investment",
+    "analysis",
+    "korean",
+    "cb-insights",
+    "claude-skill"
+  ]
+}

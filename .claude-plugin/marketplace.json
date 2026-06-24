@@ -20,6 +20,21 @@
         "layout",
         "skill"
       ]
+    },
+    {
+      "name": "portfolio",
+      "description": "VC portfolio intelligence plugin. Excel-based portfolio DB search, aggregation, analysis, and reporting with CB Insights integration.",
+      "source": "./plugins/vertical-plugins/portfolio",
+      "category": "analytics",
+      "tags": [
+        "portfolio",
+        "venture-capital",
+        "investment",
+        "analysis",
+        "korean",
+        "cb-insights",
+        "skill"
+      ]
     }
   ]
 }
