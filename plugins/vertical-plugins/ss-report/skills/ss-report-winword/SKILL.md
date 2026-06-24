@@ -1,7 +1,7 @@
 ---
 name: ss-report-winword
 description: >
-  [v1.3] ss-report-full 기반 + Windows MS Word COM 레이아웃 검증 루프가 추가된 최고 품질 보고서 스킬.
+  [v1.4] ss-report-full 기반 + Windows MS Word COM 레이아웃 검증 루프가 추가된 최고 품질 보고서 스킬.
   투자 검토, 포트폴리오 현황, 운영안 보고, 진행 현황, 설득/제안 보고 등 모든 내부 보고서에 적용.
   트리거: "보고서 만들어줘", "보고서 작성해줘", "워드로 뽑아줘", "docx 보고서", "내부 보고서",
            "검토 보고서", "현황 보고서", "기획 보고서", "제안 보고서", "ss_report", "보고서 양식",
@@ -52,6 +52,10 @@ references: `references/rules-layout.md`, `references/rules-symbol.md`, `referen
 ---
 
 ## FLOW 2. JS 코드 생성
+
+> **⚠️ JS 코드 작성 전 반드시 `references/code-helpers.md`를 읽는다.**
+> 헬퍼 함수 전체 구현체(t/tb/h1/h2/body/fn/mkTable 등)가 여기에 있음.
+> 읽지 않고 작성하면 헬퍼 함수가 누락된 껍질 코드가 생성됨.
 
 **페이지 계획표 제안 → 사용자 확인 → JS 코드 작성 → 파이프라인 실행** 순서로 진행.
 목차를 이미 확인받았더라도 페이지 계획표 확인은 별도 단계로 반드시 진행한다.
